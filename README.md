@@ -21,3 +21,6 @@ git get [<options>] [--] <repo>
 By default, repositories are cloned to `~/src`.
 This can be changed with the `GIT_GET_PATH` env variable.
 
+## Demo
+
+![](tty.gif)
