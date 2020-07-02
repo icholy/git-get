@@ -3,16 +3,32 @@ package main
 import (
 	"errors"
 	"log"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
-
-	giturls "github.com/whilp/git-urls"
 )
 
+var sshRegex = regexp.MustCompile(`^([a-zA-Z0-9_]+)@([a-zA-Z0-9._-]+):(.*)$`)
+
+func ParseURL(rawurl string) (*url.URL, error) {
+	// try to parse ssh url
+	match := sshRegex.FindStringSubmatch(rawurl)
+	if len(match) == 4 {
+		return &url.URL{
+			Scheme: "ssh",
+			User:   url.User(match[1]),
+			Host:   match[2],
+			Path:   match[3],
+		}, nil
+	}
+	return url.Parse(rawurl)
+}
+
 func Path(rawurl string) (string, error) {
-	u, err := giturls.Parse(rawurl)
+	u, err := ParseURL(rawurl)
 	if err != nil {
 		return "", err
 	}
@@ -71,7 +87,7 @@ func main() {
 }
 
 func IsRemoteArg(arg string) bool {
-	u, err := giturls.Parse(arg)
+	u, err := ParseURL(arg)
 	if err != nil {
 		return false
 	}
