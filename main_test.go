@@ -40,11 +40,11 @@ func TestPath(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.url, func(t *testing.T) {
-			path, err := Path(tt.url)
+			u, err := ParseURL(tt.url)
 			if err != nil {
-				t.Fatalf("failed to match url: %v", err)
+				t.Fatalf("failed to parse url: %v", err)
 			}
-			if path != tt.path {
+			if path := Path(u); path != tt.path {
 				t.Fatalf("expected %q, got %q", tt.path, path)
 			}
 		})

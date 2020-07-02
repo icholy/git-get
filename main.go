@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"log"
 	"net/url"
 	"os"
 	"os/exec"
@@ -27,11 +26,7 @@ func ParseURL(rawurl string) (*url.URL, error) {
 	return url.Parse(rawurl)
 }
 
-func Path(rawurl string) (string, error) {
-	u, err := ParseURL(rawurl)
-	if err != nil {
-		return "", err
-	}
+func Path(u *url.URL) string {
 	p := u.Path
 	p = strings.TrimPrefix(p, "/")
 	// general purpose
@@ -44,7 +39,7 @@ func Path(rawurl string) (string, error) {
 	if u.Scheme == "http" || u.Scheme == "https" {
 		p = strings.TrimPrefix(p, "scm/")
 	}
-	return filepath.Join(u.Host, filepath.FromSlash(p)), nil
+	return filepath.Join(u.Host, filepath.FromSlash(p))
 }
 
 func main() {
@@ -61,19 +56,17 @@ func main() {
 	// forward all the arguments
 	cmd.Args = append(cmd.Args, args...)
 	// if the last argument is a remote url, append the local path
-	if n := len(args); n > 0 && IsRemoteArg(args[n-1]) {
-		path, err := Path(args[n-1])
-		if err != nil {
-			log.Fatal(err)
+	if n := len(args); n > 0 {
+		if u, err := ParseURL(args[n-1]); err == nil {
+			// figure out where to put it
+			root := os.Getenv("GIT_GET_PATH")
+			if root == "" {
+				home, _ := os.UserHomeDir()
+				root = filepath.Join(home, "src")
+			}
+			dir := filepath.Join(root, Path(u))
+			cmd.Args = append(cmd.Args, dir)
 		}
-		// figure out where to put it
-		root := os.Getenv("GIT_GET_PATH")
-		if root == "" {
-			home, _ := os.UserHomeDir()
-			root = filepath.Join(home, "src")
-		}
-		dir := filepath.Join(root, path)
-		cmd.Args = append(cmd.Args, dir)
 	}
 	// run and exit
 	if err := cmd.Run(); err != nil {
@@ -84,16 +77,4 @@ func main() {
 		}
 		os.Exit(code)
 	}
-}
-
-func IsRemoteArg(arg string) bool {
-	u, err := ParseURL(arg)
-	if err != nil {
-		return false
-	}
-	switch u.Scheme {
-	case "http", "https", "ssh":
-		return true
-	}
-	return false
 }
