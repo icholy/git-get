@@ -12,21 +12,24 @@ import (
 
 var sshRegex = regexp.MustCompile(`^([a-zA-Z0-9_]+)@([a-zA-Z0-9._-]+):(.*)$`)
 
-func ParseURL(rawurl string) (*url.URL, error) {
+func clonePath(rawurl string) (string, error) {
 	// try to parse ssh url
+	var u *url.URL
 	match := sshRegex.FindStringSubmatch(rawurl)
 	if len(match) == 4 {
-		return &url.URL{
+		u = &url.URL{
 			Scheme: "ssh",
 			User:   url.User(match[1]),
 			Host:   match[2],
 			Path:   match[3],
-		}, nil
+		}
+	} else {
+		var err error
+		u, err = url.Parse(rawurl)
+		if err != nil {
+			return "", err
+		}
 	}
-	return url.Parse(rawurl)
-}
-
-func Path(u *url.URL) string {
 	p := u.Path
 	p = strings.TrimPrefix(p, "/")
 	// general purpose
@@ -39,7 +42,7 @@ func Path(u *url.URL) string {
 	if u.Scheme == "http" || u.Scheme == "https" {
 		p = strings.TrimPrefix(p, "scm/")
 	}
-	return filepath.Join(u.Host, filepath.FromSlash(p))
+	return filepath.Join(u.Host, filepath.FromSlash(p)), nil
 }
 
 func main() {
@@ -57,14 +60,14 @@ func main() {
 	cmd.Args = append(cmd.Args, args...)
 	// if the last argument is a remote url, append the local path
 	if n := len(args); n > 0 {
-		if u, err := ParseURL(args[n-1]); err == nil {
+		if path, err := clonePath(args[n-1]); err == nil {
 			// figure out where to put it
 			root := os.Getenv("GIT_GET_PATH")
 			if root == "" {
 				home, _ := os.UserHomeDir()
 				root = filepath.Join(home, "src")
 			}
-			dir := filepath.Join(root, Path(u))
+			dir := filepath.Join(root, path)
 			cmd.Args = append(cmd.Args, dir)
 		}
 	}

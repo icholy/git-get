@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestPath(t *testing.T) {
+func TestClonePath(t *testing.T) {
 	tests := []struct {
 		url  string
 		path string
@@ -40,11 +40,11 @@ func TestPath(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.url, func(t *testing.T) {
-			u, err := ParseURL(tt.url)
+			path, err := clonePath(tt.url)
 			if err != nil {
 				t.Fatalf("failed to parse url: %v", err)
 			}
-			if path := Path(u); path != tt.path {
+			if path != tt.path {
 				t.Fatalf("expected %q, got %q", tt.path, path)
 			}
 		})
