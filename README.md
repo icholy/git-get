@@ -4,7 +4,7 @@
 
 ## Install
 ```
-go get -u github.com/icholy/git-get
+go install github.com/icholy/git-get@latest
 ```
 
 ## Usage
